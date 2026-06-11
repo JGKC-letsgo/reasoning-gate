@@ -1,15 +1,182 @@
-# The Reasoning Gate
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Reasoning Gate</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#1c1917; --paper:#f4f0e8; --paper-deep:#ebe5d8;
+    --accent:#9a3412; --muted:#78716c; --line:#d6cdb8;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{background:var(--paper); color:var(--ink); font-family:'Newsreader',Georgia,serif; font-size:17px; line-height:1.55;}
+  .wrap{max-width:760px; margin:0 auto; padding:48px 24px 96px;}
+  header{border-bottom:2px solid var(--ink); padding-bottom:20px; margin-bottom:8px;}
+  .kicker{font-family:'IBM Plex Mono',monospace; font-size:12px; letter-spacing:.18em; text-transform:uppercase; color:var(--accent);}
+  h1{font-family:'Fraunces',Georgia,serif; font-size:clamp(34px,6vw,52px); font-weight:700; line-height:1.05; margin-top:8px;}
+  .sub{color:var(--muted); margin-top:10px; max-width:54ch;}
+  .views{display:flex; gap:0; margin:28px 0 36px; border:1.5px solid var(--ink);}
+  .views button{flex:1; padding:10px 0; background:transparent; border:none; font-family:'IBM Plex Mono',monospace; font-size:13px; letter-spacing:.08em; text-transform:uppercase; cursor:pointer; color:var(--ink);}
+  .views button.active{background:var(--ink); color:var(--paper);}
+  .stage{border:1.5px solid var(--line); background:#fffdf8; margin-bottom:18px; padding:22px 24px; transition:border-color .2s;}
+  .stage.current{border-color:var(--ink);}
+  .stage.locked{opacity:.45;}
+  .stage-head{display:flex; align-items:baseline; gap:14px;}
+  .stage-num{font-family:'IBM Plex Mono',monospace; font-size:13px; color:var(--accent);}
+  .stage-title{font-family:'Fraunces',Georgia,serif; font-size:21px; font-weight:700;}
+  .stage-why{color:var(--muted); font-size:15px; margin:8px 0 14px;}
+  textarea{width:100%; min-height:96px; border:1.5px solid var(--line); background:var(--paper); font-family:'Newsreader',Georgia,serif; font-size:16px; padding:12px; resize:vertical;}
+  textarea:focus{outline:2px solid var(--accent); outline-offset:1px;}
+  .meter{font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--muted); margin-top:6px;}
+  .commit{margin-top:12px; background:var(--ink); color:var(--paper); border:none; font-family:'IBM Plex Mono',monospace; font-size:13px; letter-spacing:.08em; text-transform:uppercase; padding:10px 22px; cursor:pointer;}
+  .commit:disabled{background:var(--muted); cursor:not-allowed;}
+  .committed{background:var(--paper-deep); border-left:4px solid var(--accent); padding:12px 14px; font-size:16px; white-space:pre-wrap;}
+  .committed-label{font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:var(--accent); display:block; margin-bottom:6px;}
+  .gate-banner{border:2px solid var(--accent); padding:18px 22px; margin:26px 0; font-family:'IBM Plex Mono',monospace; font-size:14px; color:var(--accent); text-align:center; letter-spacing:.06em;}
+  .gate-banner.open{border-color:var(--ink); color:var(--ink); background:var(--paper-deep);}
+  .trail-item{border-bottom:1px solid var(--line); padding:18px 0;}
+  .coach{background:#fffdf8; border:1.5px dashed var(--accent); padding:18px 22px; margin-top:26px;}
+  .coach h3{font-family:'Fraunces',Georgia,serif; font-size:19px; margin-bottom:10px;}
+  .coach li{margin:8px 0 8px 20px;}
+  .toolbar{display:flex; gap:12px; margin-top:30px; flex-wrap:wrap;}
+  .toolbar button{background:transparent; border:1.5px solid var(--ink); padding:9px 18px; font-family:'IBM Plex Mono',monospace; font-size:12px; letter-spacing:.08em; text-transform:uppercase; cursor:pointer; color:var(--ink);}
+  .toolbar button:hover{background:var(--ink); color:var(--paper);}
+  .footnote{margin-top:48px; padding-top:18px; border-top:1px solid var(--line); color:var(--muted); font-size:14px;}
+  @media print{.views,.toolbar,.commit{display:none;}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <span class="kicker">A protocol for early-career lawyers</span>
+    <h1>The Reasoning Gate</h1>
+    <p class="sub">The AI stays locked until you have done the thinking. Commit your own reasoning on the record first; then use the model as a sparring partner, not an oracle.</p>
+  </header>
 
-A protocol for early-career lawyers. The AI stays locked until the junior has done the thinking.
+  <div class="views">
+    <button id="tabJunior" class="active" onclick="setView('junior')">Junior — work the gate</button>
+    <button id="tabSenior" onclick="setView('senior')">Supervisor — review the trail</button>
+  </div>
 
-Before a model touches the problem, the junior must commit four things on the record: a framing of the issue in their own words, a first instinct, the authority or fact that would settle the question, and the downside risk if they are wrong. Only then does stage five unlock — and stage five is not "copy the answer", it is audit it against their own prior reasoning.
+  <div id="juniorView"></div>
+  <div id="seniorView" style="display:none"></div>
 
-A supervisor view shows the full reasoning trail with coaching prompts focused on the gap between instinct and audit, which is where real teaching lives.
+  <div class="toolbar">
+    <button onclick="window.print()">Print / save as PDF</button>
+    <button onclick="copyTrail()">Copy reasoning trail</button>
+    <button onclick="resetAll()">Start a new matter</button>
+  </div>
 
-**The design bet:** the value of a lawyer in an AI era is catching the answer that is confidently wrong. You cannot catch what you were never trained to question.
+  <p class="footnote">Built by Jean Gan · The design bet: the value of a lawyer in an AI era is catching the answer that is confidently wrong. You cannot catch what you were never trained to question.</p>
+</div>
 
-## Run it
+<script>
+const STAGES = [
+  { key:"frame",    title:"Frame the issue",          why:"State the actual legal question in your own words. Not the client's words, not the partner's email. If you cannot frame it, you cannot judge any answer to it.", min:120, label:"Your framing" },
+  { key:"instinct", title:"Commit a first instinct",  why:"Before any research, what does your gut say the answer is, and why? This goes on the record. Being wrong here is cheap; never forming a view is expensive.", min:100, label:"Your instinct" },
+  { key:"settle",   title:"Name what would settle it",why:"Which authority, clause, document or fact would actually resolve this question? Knowing what evidence decides an issue is the skill itself.", min:80, label:"What settles it" },
+  { key:"downside", title:"State the downside risk",  why:"If your instinct is wrong, who gets hurt and how badly? Risk framing is what separates legal advice from legal information.", min:80, label:"The downside" },
+  { key:"audit",    title:"Audit the AI output",      why:"The gate is open. Run your question through the model, paste the output below, then mark where it diverges from your reasoning and where it asserts things it cannot support.", min:150, label:"AI output and your audit" }
+];
 
-Open `index.html` in any browser, or enable GitHub Pages on this repository (Settings → Pages → deploy from `main`) to host it live. No build step, no dependencies, no data leaves the browser — the reasoning trail is stored locally on the user's machine only.
+let state = load();
 
-Built by [Jean Gan](https://github.com/JGKC-letsgo).
+function load(){
+  try{ const s = JSON.parse(localStorage.getItem("reasoningGate")||"null"); if(s && s.entries) return s; }catch(e){}
+  return { entries:{}, committed:{} };
+}
+function save(){ localStorage.setItem("reasoningGate", JSON.stringify(state)); }
+
+function stageStatus(i){
+  const key = STAGES[i].key;
+  if(state.committed[key]) return "done";
+  for(let j=0;j<i;j++){ if(!state.committed[STAGES[j].key]) return "locked"; }
+  return "current";
+}
+
+function renderJunior(){
+  const root = document.getElementById("juniorView");
+  let html = "";
+  const gateOpen = STAGES.slice(0,4).every(s => state.committed[s.key]);
+  STAGES.forEach((s,i)=>{
+    if(i===4){
+      html += gateOpen
+        ? '<div class="gate-banner open">THE GATE IS OPEN — consult your AI tool, then return and audit it</div>'
+        : '<div class="gate-banner">THE GATE IS LOCKED — the AI waits until stages 1 to 4 are committed</div>';
+    }
+    const status = stageStatus(i);
+    html += `<div class="stage ${status}">
+      <div class="stage-head"><span class="stage-num">STAGE ${i+1} / 5</span><span class="stage-title">${s.title}</span></div>
+      <p class="stage-why">${s.why}</p>`;
+    if(status==="done"){
+      html += `<div class="committed"><span class="committed-label">${s.label} — committed, on the record</span>${esc(state.committed[s.key])}</div>`;
+    } else if(status==="current"){
+      const val = state.entries[s.key]||"";
+      html += `<textarea id="ta-${s.key}" oninput="onType('${s.key}',this)">${esc(val)}</textarea>
+      <div class="meter" id="m-${s.key}">${val.length} / ${s.min} characters minimum</div>
+      <button class="commit" id="b-${s.key}" onclick="commit('${s.key}')" ${val.length>=s.min?"":"disabled"}>Commit — this cannot be edited</button>`;
+    } else {
+      html += `<p class="meter">Locked until the previous stage is committed.</p>`;
+    }
+    html += `</div>`;
+  });
+  root.innerHTML = html;
+}
+
+function renderSenior(){
+  const root = document.getElementById("seniorView");
+  let html = `<p class="sub" style="margin-bottom:20px">The full reasoning trail, in the order it was committed. Coach the gaps, not the answer.</p>`;
+  let any=false;
+  STAGES.forEach((s,i)=>{
+    if(state.committed[s.key]){
+      any=true;
+      html += `<div class="trail-item"><span class="committed-label">Stage ${i+1} — ${s.title}</span><p style="white-space:pre-wrap">${esc(state.committed[s.key])}</p></div>`;
+    }
+  });
+  if(!any) html += `<p class="meter">Nothing committed yet. The junior has not entered the gate.</p>`;
+  if(state.committed.instinct && state.committed.audit){
+    html += `<div class="coach"><h3>Coaching prompts</h3><ul>
+      <li>Where does the audit diverge from the first instinct? That gap is the lesson: was the instinct wrong, or did the AI miss the point of the question?</li>
+      <li>Did the junior's "what settles it" actually appear in the AI output, or did the model decide the issue on something else entirely?</li>
+      <li>Ask the junior to defend one position in the audit without referring back to the AI text.</li>
+      <li>Does the stated downside risk change how much verification this answer deserves before it leaves the building?</li>
+    </ul></div>`;
+  }
+  root.innerHTML = html;
+}
+
+function onType(key, ta){
+  state.entries[key] = ta.value; save();
+  const s = STAGES.find(x=>x.key===key);
+  document.getElementById("m-"+key).textContent = ta.value.length+" / "+s.min+" characters minimum";
+  document.getElementById("b-"+key).disabled = ta.value.length < s.min;
+}
+function commit(key){
+  const val = (state.entries[key]||"").trim();
+  const s = STAGES.find(x=>x.key===key);
+  if(val.length < s.min) return;
+  state.committed[key] = val; save(); renderJunior(); renderSenior();
+}
+function setView(v){
+  document.getElementById("juniorView").style.display = v==="junior"?"":"none";
+  document.getElementById("seniorView").style.display = v==="senior"?"":"none";
+  document.getElementById("tabJunior").classList.toggle("active", v==="junior");
+  document.getElementById("tabSenior").classList.toggle("active", v==="senior");
+}
+function copyTrail(){
+  let out = "THE REASONING GATE — TRAIL\n\n";
+  STAGES.forEach((s,i)=>{ if(state.committed[s.key]) out += "STAGE "+(i+1)+" — "+s.title.toUpperCase()+"\n"+state.committed[s.key]+"\n\n"; });
+  navigator.clipboard.writeText(out).then(()=>alert("Reasoning trail copied to clipboard."));
+}
+function resetAll(){
+  if(confirm("Start a new matter? The current trail will be erased.")){ state={entries:{},committed:{}}; save(); renderJunior(); renderSenior(); }
+}
+function esc(t){ return (t||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+
+renderJunior(); renderSenior();
+</script>
+</body>
+</html>
